@@ -1,25 +1,51 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import { spawn } from "node:child_process";
+import { dirname, join } from "node:path";
+import { homedir } from "node:os";
+import { fileURLToPath } from "node:url";
 
 /**
  * omp/pi extension exposing the Hermes holographic fact store.
- * Proxies fact_store and fact_feedback to the `omp-holographic` CLI
- * (uv tool install --editable ~/projects/omp-holographic).
+ * Proxies fact_store and fact_feedback to the bundled `omp-holographic` Python CLI.
+ * The CLI is launched through `uv run --project <this package>`, so installing the
+ * plugin is the only setup step; uv builds a private environment on first use.
+ * Set OMP_HOLOGRAPHIC_BIN to use a pre-installed CLI instead.
  */
 
-const BIN = process.env.OMP_HOLOGRAPHIC_BIN ?? "omp-holographic";
+const PROJECT_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+const VENV = join(homedir(), ".omp", "agent", "holographic", "venv");
+
+function command(tool: string, args: Record<string, unknown>): { bin: string; argv: string[]; env: NodeJS.ProcessEnv } {
+  const payload = JSON.stringify(args);
+  const override = process.env.OMP_HOLOGRAPHIC_BIN;
+  if (override) return { bin: override, argv: [tool, payload], env: process.env };
+  return {
+    bin: "uv",
+    argv: ["run", "--quiet", "--project", PROJECT_ROOT, "--extra", "hrr", "omp-holographic", tool, payload],
+    env: { ...process.env, UV_PROJECT_ENVIRONMENT: VENV },
+  };
+}
 
 function run(tool: string, args: Record<string, unknown>): Promise<string> {
   return new Promise((resolve, reject) => {
-    const child = spawn(BIN, [tool, JSON.stringify(args)], { stdio: ["ignore", "pipe", "pipe"] });
+    const { bin, argv, env } = command(tool, args);
+    const child = spawn(bin, argv, { stdio: ["ignore", "pipe", "pipe"], env });
     let out = "";
     let err = "";
     child.stdout.on("data", (d: Buffer) => (out += d.toString()));
     child.stderr.on("data", (d: Buffer) => (err += d.toString()));
-    child.on("error", (e) => reject(new Error(`Failed to run ${BIN}: ${e.message}`)));
+    child.on("error", (e: NodeJS.ErrnoException) =>
+      reject(
+        new Error(
+          e.code === "ENOENT" && bin === "uv"
+            ? "omp-holographic needs `uv` on PATH. Install it from https://docs.astral.sh/uv/ and retry."
+            : `Failed to run ${bin}: ${e.message}`,
+        ),
+      ),
+    );
     child.on("close", (code) =>
-      code === 0 ? resolve(out.trim()) : reject(new Error(err.trim() || `${BIN} exited with code ${code}`)),
+      code === 0 ? resolve(out.trim()) : reject(new Error(err.trim() || `${bin} exited with code ${code}`)),
     );
   });
 }

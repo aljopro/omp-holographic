@@ -15,28 +15,25 @@ Everything stays on your machine in one SQLite file.
 ## How it works
 
 ```
-omp  ──►  extension (src/index.ts)  ──►  omp-holographic CLI  ──►  SQLite
-          fact_store, fact_feedback       JSON in / JSON out       ~/.omp/agent/holographic/memory_store.db
+omp  ──►  extension (src/index.ts)  ──►  uv run omp-holographic  ──►  SQLite
+          fact_store, fact_feedback       JSON in / JSON out          ~/.omp/agent/holographic/memory_store.db
 ```
 
 The extension is a thin wrapper. The Python CLI does the work, so the store can also be used from scripts or any other agent.
 
 ## Install
 
-Requirements: `omp`, [`uv`](https://docs.astral.sh/uv/), and [`bun`](https://bun.sh) (omp's plugin manager needs it).
+Prerequisite: [`uv`](https://docs.astral.sh/uv/). omp's plugin manager also needs [`bun`](https://bun.sh).
 
 ```bash
-git clone git@github.com:aljopro/omp-holographic.git
-cd omp-holographic
-
-# 1. the CLI (numpy is optional but enables the HRR vector ops)
-uv tool install --editable ".[hrr]"
-
-# 2. the omp extension + skill
-omp plugin link "$PWD"
+omp plugin install github:aljopro/omp-holographic
 ```
 
 Restart omp. The agent now has the `fact_store` and `fact_feedback` tools and a `holographic` skill.
+
+There is no separate CLI to install. On first use the extension runs the bundled Python through `uv`, which builds a private environment in `~/.omp/agent/holographic/venv` (a few seconds, once).
+
+Update with `omp plugin upgrade`, remove with `omp plugin uninstall omp-holographic`.
 
 ## Tools
 
@@ -75,7 +72,7 @@ Output is JSON on stdout. Errors go to stderr with exit code 1.
 | `OMP_HOLOGRAPHIC_DB` | `~/.omp/agent/holographic/memory_store.db` | Database path |
 | `OMP_HOLOGRAPHIC_HRR_DIM` | `1024` | HRR vector dimensions |
 | `OMP_HOLOGRAPHIC_MIN_TRUST` | `0.3` | Minimum trust for search results |
-| `OMP_HOLOGRAPHIC_BIN` | `omp-holographic` | CLI the extension runs |
+| `OMP_HOLOGRAPHIC_BIN` | _(unset)_ | Run this pre-installed CLI instead of launching the bundled one through `uv` |
 
 The database is separate from Hermes. To share facts with a Hermes install, point `OMP_HOLOGRAPHIC_DB` at its `memory_store.db`.
 
@@ -90,9 +87,9 @@ This is a port, not a drop-in:
 ## Development
 
 ```bash
-uv tool install --editable ".[hrr]"      # CLI picks up source edits immediately
 export OMP_HOLOGRAPHIC_DB=$(mktemp -d)/test.db
-omp-holographic fact_store '{"action":"list"}'
+uv run omp-holographic fact_store '{"action":"list"}'
+omp plugin link "$PWD"                   # use your working copy in omp
 ```
 
 See [AGENTS.md](AGENTS.md) for contributor and agent notes.

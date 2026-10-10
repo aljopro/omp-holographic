@@ -14,7 +14,7 @@ A port of the Hermes Agent holographic memory provider to oh-my-pi (`omp`). Pyth
 | `src/omp_holographic/retrieval.py` | Search, probe, related, reason, contradict. Vendored |
 | `src/omp_holographic/holographic.py` | HRR vector algebra (numpy optional). Vendored |
 | `src/omp_holographic/cli.py` | Ours. JSON-in/JSON-out dispatch used by the extension |
-| `src/index.ts` | Ours. omp extension; spawns the CLI per tool call |
+| `src/index.ts` | Ours. omp extension; spawns the CLI per tool call via `uv run --project` |
 | `skills/holographic/SKILL.md` | Ours. Usage guidance shown to the agent |
 | `THIRD_PARTY_LICENSE` | Nous Research MIT notice for the vendored files. Keep it |
 
@@ -30,12 +30,12 @@ A port of the Hermes Agent holographic memory provider to oh-my-pi (`omp`). Pyth
 
 ```bash
 export OMP_HOLOGRAPHIC_DB=$(mktemp -d)/t.db
-omp-holographic fact_store '{"action":"add","content":"Jensen prefers vitest over jest","category":"user_pref"}'
-omp-holographic fact_store '{"action":"search","query":"vitest"}'
-omp-holographic fact_store '{"action":"probe","entity":"Jensen"}'
-omp-holographic fact_store '{"action":"reason","entities":["Jensen","vitest"]}'
-omp-holographic fact_feedback '{"action":"helpful","fact_id":1}'
-omp-holographic fact_store '{"action":"bogus"}'   # must exit 1
+uv run omp-holographic fact_store '{"action":"add","content":"Jensen prefers vitest over jest","category":"user_pref"}'
+uv run omp-holographic fact_store '{"action":"search","query":"vitest"}'
+uv run omp-holographic fact_store '{"action":"probe","entity":"Jensen"}'
+uv run omp-holographic fact_store '{"action":"reason","entities":["Jensen","vitest"]}'
+uv run omp-holographic fact_feedback '{"action":"helpful","fact_id":1}'
+uv run omp-holographic fact_store '{"action":"bogus"}'   # must exit 1
 ```
 
 End to end through omp (headless):
@@ -46,7 +46,9 @@ omp -p --no-session --auto-approve "Use fact_store to add a test fact, then prob
 
 ## Install for local use
 
-`uv tool install --editable ".[hrr]"` then `omp plugin link "$PWD"`. `omp plugin install` requires `bun`.
+`omp plugin link "$PWD"` uses the working copy; end users run `omp plugin install github:aljopro/omp-holographic`. Both need `uv` (the extension launches the CLI with `uv run --project`) and `bun` (omp's plugin manager). No separate CLI install is required.
+
+The extension builds its environment in `~/.omp/agent/holographic/venv`. Set `OMP_HOLOGRAPHIC_BIN` to run a different CLI.
 
 ## Known gaps
 
