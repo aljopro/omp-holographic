@@ -1,0 +1,11 @@
+{
+  "name": "omp-holographic",
+  "version": "0.1.0",
+  "description": "Hermes holographic fact store for oh-my-pi / pi",
+  "keywords": ["pi-package", "pi-extension", "pi-skill", "memory"],
+  "license": "MIT",
+  "type": "module",
+  "main": "src/index.ts",
+  "peerDependencies": { "@earendil-works/pi-coding-agent": "*", "typebox": "*" },
+  "pi": { "extensions": ["src/index.ts"], "skills": ["skills"] }
+}

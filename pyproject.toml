@@ -1,0 +1,20 @@
+[project]
+name = "omp-holographic"
+version = "0.1.0"
+description = "Hermes holographic fact store (SQLite + FTS5 + HRR + trust scoring) as a standalone CLI for oh-my-pi"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = []
+
+[project.optional-dependencies]
+hrr = ["numpy"]
+
+[project.scripts]
+omp-holographic = "omp_holographic.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/omp_holographic"]
